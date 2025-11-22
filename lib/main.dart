@@ -3,64 +3,79 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
 import 'models/bill.dart';
+import 'models/app_settings.dart';
 import 'providers/bill_provider.dart';
+import 'providers/settings_provider.dart';
 import 'screens/dashboard_screen.dart';
 
 Future<void> main() async {
-  // Ensure Flutter engine is initialized before any async/Plugin calls.
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Hive for Flutter (uses app document directory).
   await Hive.initFlutter();
 
-  // Register Hive adapters for our models.
-  // These classes are generated in `bill.g.dart` via build_runner.
+  // Register Hive adapters
   Hive.registerAdapter(BillFrequencyAdapter());
   Hive.registerAdapter(BillAdapter());
+  Hive.registerAdapter(AppThemeModeAdapter());
+  Hive.registerAdapter(AppSettingsAdapter());
 
-  // Open the box that will store Bill objects.
+  // Open boxes
   final billsBox = await Hive.openBox<Bill>('bills_box');
+  final settingsBox = await Hive.openBox<AppSettings>('settings_box');
 
-  runApp(BillBucketApp(billsBox: billsBox));
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => BillProvider(billsBox: billsBox),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(settingsBox: settingsBox),
+        ),
+      ],
+      child: const BillBucketApp(),
+    ),
+  );
 }
 
 /// Root widget of the app.
 ///
-/// Wraps MaterialApp with Provider so the entire app tree
-/// has access to the BillProvider.
+/// Listens to SettingsProvider to decide which theme mode to use.
 class BillBucketApp extends StatelessWidget {
-  const BillBucketApp({
-    super.key,
-    required this.billsBox,
-  });
-
-  final Box<Bill> billsBox;
+  const BillBucketApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider<BillProvider>(
-          create: (_) => BillProvider(billsBox: billsBox),
-        ),
-      ],
-      child: MaterialApp(
-        title: 'Bill Bucket',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorSchemeSeed: Colors.teal,
-          brightness: Brightness.light,
-        ),
-        darkTheme: ThemeData(
-          useMaterial3: true,
-          colorSchemeSeed: Colors.teal,
-          brightness: Brightness.dark,
-        ),
-        // Later we can add themeMode from settings; for now just system.
-        themeMode: ThemeMode.system,
-        home: const DashboardScreen(),
+    final settings = context.watch<SettingsProvider>();
+    final themeMode = _mapAppThemeMode(settings.themeMode);
+
+    return MaterialApp(
+      title: 'Bill Bucket',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.teal,
+        brightness: Brightness.light,
       ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.teal,
+        brightness: Brightness.dark,
+      ),
+      themeMode: themeMode,
+      home: const DashboardScreen(),
     );
+  }
+
+  /// Maps our custom AppThemeMode enum to Flutter's ThemeMode.
+  ThemeMode _mapAppThemeMode(AppThemeMode mode) {
+    switch (mode) {
+      case AppThemeMode.system:
+        return ThemeMode.system;
+      case AppThemeMode.light:
+        return ThemeMode.light;
+      case AppThemeMode.dark:
+        return ThemeMode.dark;
+    }
   }
 }

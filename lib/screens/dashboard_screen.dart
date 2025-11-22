@@ -5,6 +5,8 @@ import '../providers/bill_provider.dart';
 import '../models/bill.dart';
 import 'add_edit_bill_screen.dart';
 import 'bill_detail_screen.dart';
+import 'settings_screen.dart';
+
 
 /// Main dashboard screen.
 ///
@@ -27,6 +29,18 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bill Bucket Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const SettingsScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
