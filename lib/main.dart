@@ -1,3 +1,4 @@
+import 'package:bill_bucket/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -7,22 +8,33 @@ import 'models/app_settings.dart';
 import 'providers/bill_provider.dart';
 import 'providers/settings_provider.dart';
 import 'screens/dashboard_screen.dart';
-
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Hive.initFlutter();
+
+  // Register adapters
   Hive.registerAdapter(BillFrequencyAdapter());
   Hive.registerAdapter(BillAdapter());
+  Hive.registerAdapter(AppThemeModeAdapter());
+  Hive.registerAdapter(AppSettingsAdapter());
+
+  // Open Hive boxes
   final billsBox = await Hive.openBox<Bill>('bills_box');
+  final settingsBox = await Hive.openBox<AppSettings>('settings_box');
+
+  await NotificationService.instance.init();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
           create: (_) => BillProvider(billsBox: billsBox),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(settingsBox: settingsBox),
         ),
       ],
       child: const BillBucketApp(),
@@ -35,13 +47,31 @@ class BillBucketApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+    final themeMode = _mapThemeMode(settings.themeMode);
+
     return MaterialApp(
       title: 'Bill Bucket',
       debugShowCheckedModeBanner: false,
+
+      // ✅ Use your custom brand themes here
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.system, // later you can hook this to Settings
+      themeMode: themeMode,
+
       home: const DashboardScreen(),
     );
+  }
+
+  /// Maps your AppThemeMode to Flutter's ThemeMode
+  ThemeMode _mapThemeMode(AppThemeMode mode) {
+    switch (mode) {
+      case AppThemeMode.system:
+        return ThemeMode.system;
+      case AppThemeMode.light:
+        return ThemeMode.light;
+      case AppThemeMode.dark:
+        return ThemeMode.dark;
+    }
   }
 }

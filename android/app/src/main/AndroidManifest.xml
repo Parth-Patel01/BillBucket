@@ -16,6 +16,9 @@
         </intent>
     </queries>
 
+    <!-- Permission for notifications on Android 13+ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:label="Bill Bucket"
         android:name="${applicationName}"
