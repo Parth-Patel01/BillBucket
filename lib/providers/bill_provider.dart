@@ -260,4 +260,30 @@ class BillProvider extends ChangeNotifier {
         return DateTime(from.year + 1, from.month, from.day);
     }
   }
+
+  bool isPaidToday(DateTime? paidDate) {
+    if (paidDate == null) return false;
+    final now = DateTime.now();
+    return paidDate.year == now.year &&
+        paidDate.month == now.month &&
+        paidDate.day == now.day;
+  }
+
+  Future<void> undoPayment(String id) async {
+    final bill = getBillById(id);
+    if (bill == null) return;
+
+    // Undo only resets lastPaidDate; do NOT touch nextDueDate,
+    // because nextDueDate remains what the previous cycle was.
+    // The user will pay again when needed.
+    final updated = bill.copyWith(
+      lastPaidDate: null,
+      // Only rollback nextDueDate if lastPaidDate was today.
+      // Otherwise undo becomes dangerous.
+      nextDueDate: bill.nextDueDate,
+    );
+
+    await updateBill(updated);
+  }
+
 }
