@@ -25,11 +25,13 @@ class DashboardScreen extends StatelessWidget {
     final weeklyTransfer = billProvider.recommendedWeeklyTransfer;
     final upcomingBills = billProvider.upcomingBills(daysAhead: 14);
 
-    // 🔹 Sort main list by next due date (soonest first)
+    // Sort main list by next due date (soonest first)
     final sortedBills = [...bills]
       ..sort(
             (a, b) => a.nextDueDate.compareTo(b.nextDueDate),
       );
+
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -60,24 +62,22 @@ class DashboardScreen extends StatelessWidget {
             _UpcomingBillsSection(upcomingBills: upcomingBills),
             const SizedBox(height: 16),
 
+            // Heading for main list — use Baloo2 to match brand
             Text(
               'All Bills (${sortedBills.length})',
-              style: Theme.of(context).textTheme.titleMedium,
+              style: textTheme.titleMedium?.copyWith(
+                fontFamily: 'Baloo2',
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 8),
 
             Expanded(
               child: sortedBills.isEmpty
-                  ? const Center(
-                child: Text(
-                  'No bills added yet.\nTap the + button to add your first bill.',
-                  textAlign: TextAlign.center,
-                ),
-              )
+                  ? _EmptyBillsState()
                   : ListView.builder(
-                padding: const EdgeInsets.only(
-                  bottom: 80,
-                ), // extra space for FAB
+                padding:
+                const EdgeInsets.only(bottom: 80), // space for FAB
                 itemCount: sortedBills.length,
                 itemBuilder: (context, index) {
                   final bill = sortedBills[index];
@@ -185,9 +185,11 @@ class _UpcomingBillsSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Heading uses Baloo2 as well
             Text(
               'Upcoming bills (next 14 days)',
               style: textTheme.titleMedium?.copyWith(
+                fontFamily: 'Baloo2',
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -212,6 +214,11 @@ class _UpcomingBillsSection extends StatelessWidget {
                     final bill = upcomingBills[index];
                     final isOverdue = billProvider.isOverdue(bill);
 
+                    final day =
+                    bill.nextDueDate.day.toString().padLeft(2, '0');
+                    final month =
+                    bill.nextDueDate.month.toString().padLeft(2, '0');
+
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -227,10 +234,7 @@ class _UpcomingBillsSection extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          formatShortDate(bill.nextDueDate),
-                          style: textTheme.bodySmall,
-                        ),
+                        Text('$day/$month', style: textTheme.bodySmall),
                         const SizedBox(width: 8),
                         Text(
                           formatMoney(bill.amount),
@@ -253,6 +257,41 @@ class _UpcomingBillsSection extends StatelessWidget {
   }
 }
 
+/// Empty state shown when there are no bills.
+class _EmptyBillsState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 48,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No bills yet',
+            style: textTheme.titleMedium?.copyWith(
+              fontFamily: 'Baloo2',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Tap the + button to add your first bill.',
+            style: textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Basic list tile for a bill.
 /// Tapping navigates to the bill detail screen.
 class _BillListTile extends StatelessWidget {
@@ -265,6 +304,9 @@ class _BillListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final freqLabel = Bill.frequencyLabel(bill.frequency);
+    final day = bill.nextDueDate.day.toString().padLeft(2, '0');
+    final month = bill.nextDueDate.month.toString().padLeft(2, '0');
+    final year = bill.nextDueDate.year.toString();
 
     final billProvider = context.read<BillProvider>();
     final isOverdue = billProvider.isOverdue(bill);
@@ -285,7 +327,7 @@ class _BillListTile extends StatelessWidget {
           style: titleStyle,
         ),
         subtitle: Text(
-          '$freqLabel • Next due: ${formatShortDate(bill.nextDueDate)}',
+          '$freqLabel • Next due: $day/$month/$year',
         ),
         trailing: Text(
           formatMoney(bill.amount),
