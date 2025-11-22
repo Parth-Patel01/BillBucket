@@ -12,7 +12,7 @@ import 'bill_detail_screen.dart';
 /// Responsibilities:
 /// - Shows high-level summary (monthly cost, recommended weekly transfer).
 /// - Shows upcoming bills (next 14 days).
-/// - Lists all bills with navigation to details.
+/// - Lists all bills sorted by next due date.
 /// - Provides FAB to add a new bill.
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -25,9 +25,15 @@ class DashboardScreen extends StatelessWidget {
     final weeklyTransfer = billProvider.recommendedWeeklyTransfer;
     final upcomingBills = billProvider.upcomingBills(daysAhead: 14);
 
+    // 🔹 Sort main list by next due date (soonest first)
+    final sortedBills = [...bills]
+      ..sort(
+            (a, b) => a.nextDueDate.compareTo(b.nextDueDate),
+      );
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('Bill Bucket Dashboard'),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -55,13 +61,13 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             Text(
-              'All Bills (${bills.length})',
+              'All Bills (${sortedBills.length})',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
 
             Expanded(
-              child: bills.isEmpty
+              child: sortedBills.isEmpty
                   ? const Center(
                 child: Text(
                   'No bills added yet.\nTap the + button to add your first bill.',
@@ -69,9 +75,9 @@ class DashboardScreen extends StatelessWidget {
                 ),
               )
                   : ListView.builder(
-                itemCount: bills.length,
+                itemCount: sortedBills.length,
                 itemBuilder: (context, index) {
-                  final bill = bills[index];
+                  final bill = sortedBills[index];
                   return _BillListTile(bill: bill);
                 },
               ),
@@ -203,8 +209,9 @@ class _UpcomingBillsSection extends StatelessWidget {
 
                     final amountStyle = textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color:
-                      isOverdue ? colorScheme.error : textTheme.bodyMedium?.color,
+                      color: isOverdue
+                          ? colorScheme.error
+                          : textTheme.bodyMedium?.color,
                     );
 
                     return Row(
