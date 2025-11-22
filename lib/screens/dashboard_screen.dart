@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../providers/bill_provider.dart';
 import '../models/bill.dart';
+import 'add_edit_bill_screen.dart';
+
 
 /// Initial dashboard screen.
 ///
@@ -24,13 +26,22 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Bill Bucket Dashboard'),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const AddEditBillScreen(),
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: billProvider.isInitialized
             ? Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // High-level summary
             _SummaryCard(
               totalMonthly: totalMonthly,
               weeklyTransfer: weeklyTransfer,
@@ -45,7 +56,7 @@ class DashboardScreen extends StatelessWidget {
               child: bills.isEmpty
                   ? const Center(
                 child: Text(
-                  'No bills added yet.\nYou will add them in the next step.',
+                  'No bills added yet.\nTap the + button to add your first bill.',
                   textAlign: TextAlign.center,
                 ),
               )
