@@ -6,13 +6,13 @@ import '../models/bill.dart';
 import 'add_edit_bill_screen.dart';
 import 'bill_detail_screen.dart';
 
-
-/// Initial dashboard screen.
+/// Main dashboard screen.
 ///
-/// Right now it just:
-/// - Reads data from BillProvider.
-/// - Shows basic info to confirm that everything is wired correctly.
-/// Later we will expand this into proper cards and lists.
+/// Responsibilities:
+/// - Shows high-level summary (monthly cost, recommended weekly transfer).
+/// - Shows upcoming bills (next 14 days).
+/// - Lists all bills with navigation to details.
+/// - Provides FAB to add a new bill.
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
@@ -22,6 +22,7 @@ class DashboardScreen extends StatelessWidget {
     final bills = billProvider.bills;
     final totalMonthly = billProvider.totalMonthlyCost;
     final weeklyTransfer = billProvider.recommendedWeeklyTransfer;
+    final upcomingBills = billProvider.upcomingBills(daysAhead: 14);
 
     return Scaffold(
       appBar: AppBar(
@@ -48,11 +49,16 @@ class DashboardScreen extends StatelessWidget {
               weeklyTransfer: weeklyTransfer,
             ),
             const SizedBox(height: 16),
+
+            _UpcomingBillsSection(upcomingBills: upcomingBills),
+            const SizedBox(height: 16),
+
             Text(
               'All Bills (${bills.length})',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
+
             Expanded(
               child: bills.isEmpty
                   ? const Center(
@@ -79,7 +85,7 @@ class DashboardScreen extends StatelessWidget {
   }
 }
 
-/// Simple card showing summary metrics.
+/// Simple card showing summary metrics (monthly cost and weekly transfer).
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
     required this.totalMonthly,
@@ -139,15 +145,94 @@ class _SummaryItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           '\$${value.toStringAsFixed(2)}',
-          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ],
     );
   }
 }
 
+/// Card section for upcoming bills within the next 14 days.
+class _UpcomingBillsSection extends StatelessWidget {
+  const _UpcomingBillsSection({
+    required this.upcomingBills,
+  });
+
+  final List<Bill> upcomingBills;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Upcoming bills (next 14 days)',
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (upcomingBills.isEmpty)
+              Text(
+                'No bills due in the next 14 days.',
+                style: textTheme.bodyMedium,
+              )
+            else
+              SizedBox(
+                height: 160,
+                child: ListView.separated(
+                  itemCount: upcomingBills.length,
+                  separatorBuilder: (_, __) => const Divider(height: 8),
+                  itemBuilder: (context, index) {
+                    final bill = upcomingBills[index];
+                    final day =
+                    bill.nextDueDate.day.toString().padLeft(2, '0');
+                    final month =
+                    bill.nextDueDate.month.toString().padLeft(2, '0');
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            bill.name,
+                            style: textTheme.bodyMedium,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$day/$month',
+                          style: textTheme.bodySmall,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '\$${bill.amount.toStringAsFixed(2)}',
+                          style: textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Basic list tile for a bill.
-/// We’ll later navigate to a detailed screen when tapping it.
+/// Tapping navigates to the bill detail screen.
 class _BillListTile extends StatelessWidget {
   const _BillListTile({
     required this.bill,
@@ -158,13 +243,15 @@ class _BillListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final freqLabel = Bill.frequencyLabel(bill.frequency);
+    final day = bill.nextDueDate.day.toString().padLeft(2, '0');
+    final month = bill.nextDueDate.month.toString().padLeft(2, '0');
+    final year = bill.nextDueDate.year.toString();
 
     return Card(
       child: ListTile(
         title: Text(bill.name),
         subtitle: Text(
-          '$freqLabel • Next due: '
-              '${bill.nextDueDate.day}/${bill.nextDueDate.month}/${bill.nextDueDate.year}',
+          '$freqLabel • Next due: $day/$month/$year',
         ),
         trailing: Text('\$${bill.amount.toStringAsFixed(2)}'),
         onTap: () {
