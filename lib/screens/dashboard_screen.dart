@@ -3,20 +3,38 @@ import 'package:provider/provider.dart';
 
 import '../providers/bill_provider.dart';
 import '../models/bill.dart';
+import '../utils/bill_icons.dart';
 import '../utils/formatters.dart';
 import 'add_edit_bill_screen.dart';
 import 'bill_detail_screen.dart';
 import 'settings_screen.dart';
+
+/// Filters for the main bills list.
+enum BillFilter {
+  all,
+  overdue,
+  weekly,
+  fortnightly,
+  monthly,
+  yearly,
+}
 
 /// Main dashboard screen.
 ///
 /// Responsibilities:
 /// - Shows high-level summary (monthly cost, recommended weekly transfer).
 /// - Shows upcoming bills (next 14 days).
-/// - Lists all bills sorted by next due date.
+/// - Lists all bills with sorting and filtering.
 /// - Provides FAB to add a new bill.
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  BillFilter _selectedFilter = BillFilter.all;
 
   @override
   Widget build(BuildContext context) {
@@ -25,14 +43,31 @@ class DashboardScreen extends StatelessWidget {
     final totalMonthly = billProvider.totalMonthlyCost;
     final weeklyTransfer = billProvider.recommendedWeeklyTransfer;
     final upcomingBills = billProvider.upcomingBills(daysAhead: 14);
+    final textTheme = Theme.of(context).textTheme;
 
-    // Sort main list by next due date (soonest first)
-    final sortedBills = [...bills]
+    // 1️⃣ Apply filter
+    final filteredBills = bills.where((bill) {
+      switch (_selectedFilter) {
+        case BillFilter.all:
+          return true;
+        case BillFilter.overdue:
+          return billProvider.isOverdue(bill);
+        case BillFilter.weekly:
+          return bill.frequency == BillFrequency.weekly;
+        case BillFilter.fortnightly:
+          return bill.frequency == BillFrequency.fortnightly;
+        case BillFilter.monthly:
+          return bill.frequency == BillFrequency.monthly;
+        case BillFilter.yearly:
+          return bill.frequency == BillFrequency.yearly;
+      }
+    }).toList();
+
+    // 2️⃣ Sort filtered list by next due date (soonest first)
+    final sortedBills = [...filteredBills]
       ..sort(
             (a, b) => a.nextDueDate.compareTo(b.nextDueDate),
       );
-
-    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -76,9 +111,20 @@ class DashboardScreen extends StatelessWidget {
             _UpcomingBillsSection(upcomingBills: upcomingBills),
             const SizedBox(height: 16),
 
+            // 🔹 Filter chips row
+            _FilterBar(
+              selected: _selectedFilter,
+              onSelected: (filter) {
+                setState(() {
+                  _selectedFilter = filter;
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+
             // Heading for main list — use Baloo2 to match brand
             Text(
-              'All Bills (${sortedBills.length})',
+              'Bills (${sortedBills.length})',
               style: textTheme.titleMedium?.copyWith(
                 fontFamily: 'Baloo2',
                 fontWeight: FontWeight.w700,
@@ -88,7 +134,9 @@ class DashboardScreen extends StatelessWidget {
 
             Expanded(
               child: sortedBills.isEmpty
-                  ? _EmptyBillsState()
+                  ? _EmptyBillsState(
+                isFiltered: _selectedFilter != BillFilter.all,
+              )
                   : ListView.builder(
                 padding:
                 const EdgeInsets.only(bottom: 80), // space for FAB
@@ -106,6 +154,66 @@ class DashboardScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Horizontal filter bar using choice chips.
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final BillFilter selected;
+  final ValueChanged<BillFilter> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final filters = BillFilter.values;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: filters.map((filter) {
+          final bool isSelected = filter == selected;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: ChoiceChip(
+              label: Text(_filterLabel(filter)),
+              selected: isSelected,
+              labelStyle: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              ),
+              selectedColor: colorScheme.primary.withOpacity(0.15),
+              onSelected: (value) {
+                if (value) {
+                  onSelected(filter);
+                }
+              },
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  String _filterLabel(BillFilter filter) {
+    switch (filter) {
+      case BillFilter.all:
+        return 'All';
+      case BillFilter.overdue:
+        return 'Overdue';
+      case BillFilter.weekly:
+        return 'Weekly';
+      case BillFilter.fortnightly:
+        return 'Fortnightly';
+      case BillFilter.monthly:
+        return 'Monthly';
+      case BillFilter.yearly:
+        return 'Yearly';
+    }
   }
 }
 
@@ -294,9 +402,18 @@ class _UpcomingBillRow extends StatelessWidget {
 
 /// Empty state shown when there are no bills.
 class _EmptyBillsState extends StatelessWidget {
+  const _EmptyBillsState({this.isFiltered = false});
+
+  final bool isFiltered;
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+
+    final title = isFiltered ? 'No bills match this filter' : 'No bills yet';
+    final subtitle = isFiltered
+        ? 'Try changing or clearing the filters above.'
+        : 'Tap the + button to add your first bill.';
 
     return Center(
       child: Column(
@@ -309,7 +426,7 @@ class _EmptyBillsState extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'No bills yet',
+            title,
             style: textTheme.titleMedium?.copyWith(
               fontFamily: 'Baloo2',
               fontWeight: FontWeight.w700,
@@ -317,7 +434,7 @@ class _EmptyBillsState extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Tap the + button to add your first bill.',
+            subtitle,
             style: textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
@@ -327,8 +444,7 @@ class _EmptyBillsState extends StatelessWidget {
   }
 }
 
-/// Basic list tile for a bill.
-/// Tapping navigates to the bill detail screen.
+/// A visually enhanced list tile for individual bills.
 class _BillListTile extends StatelessWidget {
   const _BillListTile({
     required this.bill,
@@ -346,40 +462,40 @@ class _BillListTile extends StatelessWidget {
     final freqLabel = Bill.frequencyLabel(bill.frequency);
     final dateText = formatShortDate(bill.nextDueDate);
 
-    // Category-based icon
-    final IconData iconData = _iconForBillName(bill.name);
-
-    // Colors: category by shape, overdue by color
+    // Leading icon changes based on overdue state
     final Color iconBgColor = isOverdue
-        ? colorScheme.error.withOpacity(0.10)
-        : colorScheme.primary.withOpacity(0.08);
+        ? colorScheme.error.withOpacity(0.12)
+        : colorScheme.primary.withOpacity(0.12);
 
-    final Color iconColor = isOverdue
-        ? colorScheme.error
-        : colorScheme.primary;
+    final Color iconColor =
+    isOverdue ? colorScheme.error : colorScheme.primary;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
+      elevation: 0.5,
+      shadowColor: Colors.black12,
       child: ListTile(
         contentPadding:
         const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
 
-        // Leading status/category icon
+        // Leading status icon (CATEGORY ICON)
         leading: Container(
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: iconBgColor,
+            color: isOverdue
+                ? colorScheme.error.withOpacity(0.12)
+                : colorScheme.primary.withOpacity(0.10),
             shape: BoxShape.circle,
           ),
           child: Icon(
-            iconData,
+            iconForBillName(bill.name),
             size: 22,
-            color: iconColor,
+            color: isOverdue ? colorScheme.error : colorScheme.primary,
           ),
         ),
 
-        // Title row: bill name + amount
+        // Main title row: name + amount
         title: Row(
           children: [
             Expanded(
@@ -389,6 +505,8 @@ class _BillListTile extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: isOverdue ? colorScheme.error : null,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(width: 8),
@@ -396,27 +514,26 @@ class _BillListTile extends StatelessWidget {
               formatMoney(bill.amount),
               style: textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w700,
-                color:
-                isOverdue ? colorScheme.error : textTheme.bodyLarge?.color,
+                color: isOverdue ? colorScheme.error : null,
               ),
             ),
           ],
         ),
 
-        // Subtitle row: frequency + due date
+        // Subtitle row: frequency and due date
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4.0),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.calendar_today_outlined,
                 size: 14,
-                color: Colors.grey.shade500,
+                color: Colors.grey,
               ),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  '$freqLabel • $dateText',
+                  "$freqLabel • $dateText",
                   style: textTheme.bodySmall?.copyWith(
                     color: Colors.grey.shade600,
                   ),
@@ -427,7 +544,7 @@ class _BillListTile extends StatelessWidget {
           ),
         ),
 
-        // Trailing chevron for navigational cue
+        // Trailing chevron indicator
         trailing: const Icon(
           Icons.chevron_right,
           size: 20,
@@ -445,88 +562,5 @@ class _BillListTile extends StatelessWidget {
   }
 }
 
-IconData _iconForBillName(String name) {
-  final n = name.toLowerCase();
 
-  // Car / transport
-  if (n.contains('car') || n.contains('rego') || n.contains('fuel')) {
-    return Icons.directions_car_filled;
-  }
 
-  // Health / medical insurance
-  if (n.contains('health') ||
-      n.contains('medic') ||
-      n.contains('hospital') ||
-      n.contains('hcf') ||
-      n.contains('bupa') ||
-      n.contains('nib') ||
-      n.contains('cbhs')) {
-    return Icons.health_and_safety;
-  }
-
-  // Phone / mobile
-  if (n.contains('phone') ||
-      n.contains('mobile') ||
-      n.contains('sim') ||
-      n.contains('telstra') ||
-      n.contains('optus') ||
-      n.contains('vodafone')) {
-    return Icons.smartphone;
-  }
-
-  // Internet / wifi / NBN
-  if (n.contains('internet') ||
-      n.contains('wifi') ||
-      n.contains('broadband') ||
-      n.contains('nbn')) {
-    return Icons.wifi;
-  }
-
-  // Music / streaming audio (Spotify, Apple Music, etc.)
-  if (n.contains('spotify') ||
-      n.contains('music') ||
-      n.contains('apple music') ||
-      n.contains('soundcloud')) {
-    return Icons.music_note;
-  }
-
-  // Video streaming (Netflix, Prime, Disney, YouTube, etc.)
-  if (n.contains('netflix') ||
-      n.contains('prime') ||
-      n.contains('disney') ||
-      n.contains('youtube') ||
-      n.contains('stan')) {
-    return Icons.tv;
-  }
-
-  // Rent / mortgage / home
-  if (n.contains('rent') ||
-      n.contains('mortgage') ||
-      n.contains('home loan') ||
-      n.contains('house')) {
-    return Icons.home_filled;
-  }
-
-  // Generic insurance
-  if (n.contains('insurance') || n.contains('insurence')) {
-    return Icons.shield_outlined;
-  }
-
-  // Power / electricity / gas
-  if (n.contains('electricity') ||
-      n.contains('power') ||
-      n.contains('energy') ||
-      n.contains('gas') ||
-      n.contains('agl') ||
-      n.contains('origin')) {
-    return Icons.bolt;
-  }
-
-  // Generic subscription
-  if (n.contains('subscription') || n.contains('sub ')) {
-    return Icons.autorenew;
-  }
-
-  // Fallback
-  return Icons.receipt_long;
-}
