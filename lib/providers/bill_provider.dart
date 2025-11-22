@@ -5,6 +5,7 @@ import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/bill.dart';
+import '../utils/formatters.dart';
 
 /// Central place for managing bills state and business logic.
 ///
@@ -80,7 +81,7 @@ class BillProvider extends ChangeNotifier {
       name: name.trim(),
       amount: amount,
       frequency: frequency,
-      nextDueDate: _stripTime(nextDueDate),
+      nextDueDate: stripTime(nextDueDate),
       lastPaidDate: null,
     );
 
@@ -122,8 +123,8 @@ class BillProvider extends ChangeNotifier {
       name: name?.trim(),
       amount: amount,
       frequency: frequency,
-      nextDueDate: nextDueDate != null ? _stripTime(nextDueDate) : null,
-      lastPaidDate: lastPaidDate != null ? _stripTime(lastPaidDate) : null,
+      nextDueDate: nextDueDate != null ? stripTime(nextDueDate) : null,
+      lastPaidDate: lastPaidDate != null ? stripTime(lastPaidDate) : null,
     );
 
     await updateBill(updated);
@@ -148,7 +149,7 @@ class BillProvider extends ChangeNotifier {
     final bill = getBillById(id);
     if (bill == null) return;
 
-    final normalizedPaidDate = _stripTime(paidDate);
+    final normalizedPaidDate = stripTime(paidDate);
     final nextDueDate = _calculateNextDueDate(
       from: normalizedPaidDate,
       frequency: bill.frequency,
@@ -224,24 +225,21 @@ class BillProvider extends ChangeNotifier {
     int daysAhead = 14,
     DateTime? fromDate,
   }) {
-    final now = _stripTime(fromDate ?? DateTime.now());
+    final now = stripTime(fromDate ?? DateTime.now());
     final end = now.add(Duration(days: daysAhead));
 
     final result = _bills
-        .where((bill) =>
-    bill.nextDueDate.isAfter(now.subtract(const Duration(days: 1))) &&
-        bill.nextDueDate.isBefore(end.add(const Duration(days: 1))))
+        .where(
+          (bill) =>
+      bill.nextDueDate
+          .isAfter(now.subtract(const Duration(days: 1))) &&
+          bill.nextDueDate
+              .isBefore(end.add(const Duration(days: 1))),
+    )
         .toList();
 
     result.sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
     return result;
-  }
-
-  /// Internal helper to ensure we only keep the date part (no time).
-  ///
-  /// This avoids weird bugs where comparing DateTime fails due to hours/minutes.
-  DateTime _stripTime(DateTime dateTime) {
-    return DateTime(dateTime.year, dateTime.month, dateTime.day);
   }
 
   /// Internal helper for frequency-based next due date calculation.
@@ -273,14 +271,9 @@ class BillProvider extends ChangeNotifier {
     final bill = getBillById(id);
     if (bill == null) return;
 
-    // Undo only resets lastPaidDate; do NOT touch nextDueDate,
-    // because nextDueDate remains what the previous cycle was.
-    // The user will pay again when needed.
+    // Undo only resets lastPaidDate; do NOT touch nextDueDate.
     final updated = bill.copyWith(
-      lastPaidDate: null,
-      // Only rollback nextDueDate if lastPaidDate was today.
-      // Otherwise undo becomes dangerous.
-      nextDueDate: bill.nextDueDate,
+      clearLastPaidDate: true, // assumes Bill.copyWith supports this flag
     );
 
     await updateBill(updated);
@@ -288,10 +281,8 @@ class BillProvider extends ChangeNotifier {
 
   /// Returns true if the bill is overdue (nextDueDate is before today).
   bool isOverdue(Bill bill) {
-    final today = _stripTime(DateTime.now());
-    final dueDate = _stripTime(bill.nextDueDate);
+    final today = stripTime(DateTime.now());
+    final dueDate = stripTime(bill.nextDueDate);
     return dueDate.isBefore(today);
   }
-
-
 }

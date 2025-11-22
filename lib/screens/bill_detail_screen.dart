@@ -4,9 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/bill.dart';
 import '../providers/bill_provider.dart';
 import 'add_edit_bill_screen.dart';
-
 import '../utils/formatters.dart';
-
 
 /// Shows full information about a single bill and actions:
 /// - Mark as paid today (updates next due date)
@@ -23,7 +21,7 @@ class BillDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Listen to changes to this specific bill.
     final bill = context.select<BillProvider, Bill?>(
-      (provider) => provider.getBillById(billId),
+          (provider) => provider.getBillById(billId),
     );
 
     if (bill == null) {
@@ -73,7 +71,7 @@ class BillDetailScreen extends StatelessWidget {
               // Next due date
               _DetailRow(
                 label: 'Next due date',
-                value: _formatDate(bill.nextDueDate),
+                value: formatShortDate(bill.nextDueDate),
                 textTheme: textTheme,
               ),
               const SizedBox(height: 12),
@@ -82,7 +80,7 @@ class BillDetailScreen extends StatelessWidget {
               _DetailRow(
                 label: 'Last paid',
                 value: bill.lastPaidDate != null
-                    ? _formatDate(bill.lastPaidDate!)
+                    ? formatShortDate(bill.lastPaidDate!)
                     : 'Not paid yet',
                 textTheme: textTheme,
               ),
@@ -93,25 +91,27 @@ class BillDetailScreen extends StatelessWidget {
                 width: double.infinity,
                 child: paidToday
                     ? ElevatedButton.icon(
-                        icon: const Icon(Icons.undo),
-                        label: const Text('Undo – mark as unpaid'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
+                  icon: const Icon(Icons.undo),
+                  label: const Text('Undo – mark as unpaid'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                  ),
+                  onPressed: () async {
+                    await provider.undoPayment(bill.id);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Payment undone.'),
                         ),
-                        onPressed: () async {
-                          await provider.undoPayment(bill.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Payment undone.')),
-                            );
-                          }
-                        },
-                      )
+                      );
+                    }
+                  },
+                )
                     : ElevatedButton.icon(
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: const Text('Mark as paid today'),
-                        onPressed: () => _onMarkAsPaid(context, bill),
-                      ),
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text('Mark as paid today'),
+                  onPressed: () => _onMarkAsPaid(context, bill),
+                ),
               ),
 
               const SizedBox(height: 12),
@@ -138,11 +138,12 @@ class BillDetailScreen extends StatelessWidget {
     await provider.markBillAsPaid(id: bill.id, paidDate: now);
 
     if (context.mounted) {
+      final updated = provider.getBillById(bill.id)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Marked ${bill.name} as paid. Next due: '
-            '${_formatDate(provider.getBillById(bill.id)!.nextDueDate)}',
+                '${formatShortDate(updated.nextDueDate)}',
           ),
         ),
       );
@@ -152,36 +153,37 @@ class BillDetailScreen extends StatelessWidget {
   /// Opens the AddEditBillScreen in edit mode.
   void _onEdit(BuildContext context, Bill bill) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => AddEditBillScreen(existingBill: bill)),
+      MaterialPageRoute(
+        builder: (_) => AddEditBillScreen(existingBill: bill),
+      ),
     );
   }
 
   /// Shows a confirmation dialog before deleting the bill.
   Future<void> _confirmDelete(BuildContext context, Bill bill) async {
-    final shouldDelete =
-        await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Delete bill'),
-            content: Text(
-              'Are you sure you want to delete "${bill.name}"?\n'
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete bill'),
+        content: Text(
+          'Are you sure you want to delete "${bill.name}"?\n'
               'This action cannot be undone.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
           ),
-        ) ??
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    ) ??
         false;
 
     if (!shouldDelete) return;
@@ -216,20 +218,20 @@ class _DetailRow extends StatelessWidget {
           flex: 2,
           child: Text(
             label,
-            style: textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            style: textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         const SizedBox(width: 8),
-        Expanded(flex: 3, child: Text(value, style: textTheme.bodyMedium)),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            style: textTheme.bodyMedium,
+          ),
+        ),
       ],
     );
   }
-}
-
-/// Simple date formatting helper (DD/MM/YYYY).
-String _formatDate(DateTime date) {
-  final day = date.day.toString().padLeft(2, '0');
-  final month = date.month.toString().padLeft(2, '0');
-  final year = date.year.toString();
-  return '$day/$month/$year';
 }

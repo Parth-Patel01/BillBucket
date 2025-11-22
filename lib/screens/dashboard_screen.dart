@@ -33,7 +33,7 @@ class DashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bill Bucket Dashboard'),
+        title: const Text('Dashboard'),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -75,8 +75,9 @@ class DashboardScreen extends StatelessWidget {
                 ),
               )
                   : ListView.builder(
-                padding:
-                const EdgeInsets.only(bottom: 80), // 👈 extra space for FAB
+                padding: const EdgeInsets.only(
+                  bottom: 80,
+                ), // extra space for FAB
                 itemCount: sortedBills.length,
                 itemBuilder: (context, index) {
                   final bill = sortedBills[index];
@@ -200,7 +201,7 @@ class _UpcomingBillsSection extends StatelessWidget {
             else
               ConstrainedBox(
                 constraints: const BoxConstraints(
-                  maxHeight: 240, // 👈 natural until 240px then scroll
+                  maxHeight: 240, // natural until 240px, then scroll
                 ),
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -209,13 +210,7 @@ class _UpcomingBillsSection extends StatelessWidget {
                   separatorBuilder: (_, __) => const Divider(height: 12),
                   itemBuilder: (context, index) {
                     final bill = upcomingBills[index];
-                    final provider = context.read<BillProvider>();
-                    final isOverdue = provider.isOverdue(bill);
-
-                    final day =
-                    bill.nextDueDate.day.toString().padLeft(2, '0');
-                    final month =
-                    bill.nextDueDate.month.toString().padLeft(2, '0');
+                    final isOverdue = billProvider.isOverdue(bill);
 
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -232,7 +227,10 @@ class _UpcomingBillsSection extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text('$day/$month', style: textTheme.bodySmall),
+                        Text(
+                          formatShortDate(bill.nextDueDate),
+                          style: textTheme.bodySmall,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           formatMoney(bill.amount),
@@ -255,7 +253,6 @@ class _UpcomingBillsSection extends StatelessWidget {
   }
 }
 
-
 /// Basic list tile for a bill.
 /// Tapping navigates to the bill detail screen.
 class _BillListTile extends StatelessWidget {
@@ -268,9 +265,6 @@ class _BillListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final freqLabel = Bill.frequencyLabel(bill.frequency);
-    final day = bill.nextDueDate.day.toString().padLeft(2, '0');
-    final month = bill.nextDueDate.month.toString().padLeft(2, '0');
-    final year = bill.nextDueDate.year.toString();
 
     final billProvider = context.read<BillProvider>();
     final isOverdue = billProvider.isOverdue(bill);
@@ -291,7 +285,7 @@ class _BillListTile extends StatelessWidget {
           style: titleStyle,
         ),
         subtitle: Text(
-          '$freqLabel • Next due: $day/$month/$year',
+          '$freqLabel • Next due: ${formatShortDate(bill.nextDueDate)}',
         ),
         trailing: Text(
           formatMoney(bill.amount),
