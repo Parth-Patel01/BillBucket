@@ -285,4 +285,17 @@ class BillProvider extends ChangeNotifier {
     final dueDate = stripTime(bill.nextDueDate);
     return dueDate.isBefore(today);
   }
+
+  /// Restores a previously deleted bill.
+  ///
+  /// Used for "Undo" after swipe-to-delete.
+  Future<void> restoreBill(Bill bill) async {
+    // Avoid duplicates if somehow called twice.
+    if (getBillById(bill.id) != null) return;
+
+    await _billsBox.put(bill.id, bill);
+    _bills.add(bill);
+    notifyListeners();
+  }
+
 }

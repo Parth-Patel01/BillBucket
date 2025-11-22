@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:bill_bucket/widgets/animated_press.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,14 +12,7 @@ import 'bill_detail_screen.dart';
 import 'settings_screen.dart';
 
 /// Filters for the main bills list.
-enum BillFilter {
-  all,
-  overdue,
-  weekly,
-  fortnightly,
-  monthly,
-  yearly,
-}
+enum BillFilter { all, overdue, weekly, fortnightly, monthly, yearly }
 
 /// Main dashboard screen.
 ///
@@ -65,9 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     // 2️⃣ Sort filtered list by next due date (soonest first)
     final sortedBills = [...filteredBills]
-      ..sort(
-            (a, b) => a.nextDueDate.compareTo(b.nextDueDate),
-      );
+      ..sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
 
     return Scaffold(
       appBar: AppBar(
@@ -77,22 +70,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Settings',
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const SettingsScreen(),
-                ),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
             },
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const AddEditBillScreen(),
-            ),
-          );
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const AddEditBillScreen()));
         },
         child: const Icon(Icons.add),
       ),
@@ -100,58 +89,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
         padding: const EdgeInsets.all(16.0),
         child: billProvider.isInitialized
             ? Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _SummaryCard(
-              totalMonthly: totalMonthly,
-              weeklyTransfer: weeklyTransfer,
-            ),
-            const SizedBox(height: 16),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SummaryCard(
+                    totalMonthly: totalMonthly,
+                    weeklyTransfer: weeklyTransfer,
+                  ),
+                  const SizedBox(height: 16),
 
-            _UpcomingBillsSection(upcomingBills: upcomingBills),
-            const SizedBox(height: 16),
+                  _UpcomingBillsSection(upcomingBills: upcomingBills),
+                  const SizedBox(height: 16),
 
-            // 🔹 Filter chips row
-            _FilterBar(
-              selected: _selectedFilter,
-              onSelected: (filter) {
-                setState(() {
-                  _selectedFilter = filter;
-                });
-              },
-            ),
-            const SizedBox(height: 8),
+                  // 🔹 Filter chips row
+                  _FilterBar(
+                    selected: _selectedFilter,
+                    onSelected: (filter) {
+                      setState(() {
+                        _selectedFilter = filter;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
 
-            // Heading for main list — use Baloo2 to match brand
-            Text(
-              'Bills (${sortedBills.length})',
-              style: textTheme.titleMedium?.copyWith(
-                fontFamily: 'Baloo2',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
+                  // Heading for main list — use Baloo2 to match brand
+                  Text(
+                    'Bills (${sortedBills.length})',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontFamily: 'Baloo2',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
 
-            Expanded(
-              child: sortedBills.isEmpty
-                  ? _EmptyBillsState(
-                isFiltered: _selectedFilter != BillFilter.all,
+                  Expanded(
+                    child: sortedBills.isEmpty
+                        ? _EmptyBillsState(
+                            isFiltered: _selectedFilter != BillFilter.all,
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.only(
+                              bottom: 80,
+                            ), // space for FAB
+                            itemCount: sortedBills.length,
+                            itemBuilder: (context, index) {
+                              final bill = sortedBills[index];
+                              return AnimatedOpacity(
+                                opacity: 1,
+                                duration: const Duration(milliseconds: 300),
+                                child: _BillListTile(bill: bill),
+                              );
+                            },
+                          ),
+                  ),
+                ],
               )
-                  : ListView.builder(
-                padding:
-                const EdgeInsets.only(bottom: 80), // space for FAB
-                itemCount: sortedBills.length,
-                itemBuilder: (context, index) {
-                  final bill = sortedBills[index];
-                  return _BillListTile(bill: bill);
-                },
-              ),
-            ),
-          ],
-        )
-            : const Center(
-          child: CircularProgressIndicator(),
-        ),
+            : const Center(child: CircularProgressIndicator()),
       ),
     );
   }
@@ -159,10 +151,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 /// Horizontal filter bar using choice chips.
 class _FilterBar extends StatelessWidget {
-  const _FilterBar({
-    required this.selected,
-    required this.onSelected,
-  });
+  const _FilterBar({required this.selected, required this.onSelected});
 
   final BillFilter selected;
   final ValueChanged<BillFilter> onSelected;
@@ -270,16 +259,11 @@ class _SummaryItem extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: textTheme.bodySmall,
-        ),
+        Text(label, style: textTheme.bodySmall),
         const SizedBox(height: 4),
         Text(
           formatMoney(value),
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -289,9 +273,7 @@ class _SummaryItem extends StatelessWidget {
 /// Card section for upcoming bills within the next 14 days.
 /// Grows naturally but stops at a maximum height.
 class _UpcomingBillsSection extends StatelessWidget {
-  const _UpcomingBillsSection({
-    required this.upcomingBills,
-  });
+  const _UpcomingBillsSection({required this.upcomingBills});
 
   final List<Bill> upcomingBills;
 
@@ -336,10 +318,7 @@ class _UpcomingBillsSection extends StatelessWidget {
                     final bill = upcomingBills[index];
                     final isOverdue = billProvider.isOverdue(bill);
 
-                    return _UpcomingBillRow(
-                      bill: bill,
-                      isOverdue: isOverdue,
-                    );
+                    return _UpcomingBillRow(bill: bill, isOverdue: isOverdue);
                   },
                 ),
               ),
@@ -351,10 +330,7 @@ class _UpcomingBillsSection extends StatelessWidget {
 }
 
 class _UpcomingBillRow extends StatelessWidget {
-  const _UpcomingBillRow({
-    required this.bill,
-    required this.isOverdue,
-  });
+  const _UpcomingBillRow({required this.bill, required this.isOverdue});
 
   final Bill bill;
   final bool isOverdue;
@@ -381,18 +357,13 @@ class _UpcomingBillRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          dateText,
-          style: textTheme.bodySmall,
-        ),
+        Text(dateText, style: textTheme.bodySmall),
         const SizedBox(width: 8),
         Text(
           formatMoney(bill.amount),
           style: textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w600,
-            color: isOverdue
-                ? colorScheme.error
-                : textTheme.bodyMedium?.color,
+            color: isOverdue ? colorScheme.error : textTheme.bodyMedium?.color,
           ),
         ),
       ],
@@ -444,11 +415,8 @@ class _EmptyBillsState extends StatelessWidget {
   }
 }
 
-/// A visually enhanced list tile for individual bills.
 class _BillListTile extends StatelessWidget {
-  const _BillListTile({
-    required this.bill,
-  });
+  const _BillListTile({required this.bill});
 
   final Bill bill;
 
@@ -462,105 +430,173 @@ class _BillListTile extends StatelessWidget {
     final freqLabel = Bill.frequencyLabel(bill.frequency);
     final dateText = formatShortDate(bill.nextDueDate);
 
-    // Leading icon changes based on overdue state
-    final Color iconBgColor = isOverdue
-        ? colorScheme.error.withOpacity(0.12)
-        : colorScheme.primary.withOpacity(0.12);
+    return Dismissible(
+      key: ValueKey(bill.id),
+      direction: DismissDirection.endToStart,
 
-    final Color iconColor =
-    isOverdue ? colorScheme.error : colorScheme.primary;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      elevation: 0.5,
-      shadowColor: Colors.black12,
-      child: ListTile(
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-
-        // Leading status icon (CATEGORY ICON)
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: isOverdue
-                ? colorScheme.error.withOpacity(0.12)
-                : colorScheme.primary.withOpacity(0.10),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            iconForBillName(bill.name),
-            size: 22,
-            color: isOverdue ? colorScheme.error : colorScheme.primary,
-          ),
+      // RED DELETE BACKGROUND
+      background: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        decoration: BoxDecoration(
+          color: colorScheme.error.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(16),
         ),
-
-        // Main title row: name + amount
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                bill.name,
-                style: textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: isOverdue ? colorScheme.error : null,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              formatMoney(bill.amount),
-              style: textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: isOverdue ? colorScheme.error : null,
-              ),
-            ),
-          ],
+        child: Icon(
+          Icons.delete_outline,
+          color: colorScheme.error,
+          size: 28,
         ),
+      ),
 
-        // Subtitle row: frequency and due date
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4.0),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.calendar_today_outlined,
-                size: 14,
-                color: Colors.grey,
+      // Confirm modal before deleting
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Delete bill'),
+            content: Text(
+              'Are you sure you want to delete "${bill.name}"?\n'
+                  'This action can be undone briefly.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
               ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  "$freqLabel • $dateText",
-                  style: textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
                 ),
               ),
             ],
           ),
-        ),
+        ) ??
+            false;
+      },
 
-        // Trailing chevron indicator
-        trailing: const Icon(
-          Icons.chevron_right,
-          size: 20,
-        ),
+      // Handle actual delete + snackbar undo
+      onDismissed: (direction) async {
+        final deletedBill = bill; // keep backup
 
+        await billProvider.deleteBill(bill.id);
+
+        if (!context.mounted) return;
+
+        final messenger = ScaffoldMessenger.of(context);
+
+        messenger.clearSnackBars();
+
+        final controller = messenger.showSnackBar(
+          SnackBar(
+            content: Text('Deleted "${deletedBill.name}".'),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () {
+                billProvider.restoreBill(deletedBill);
+              },
+            ),
+          ),
+        );
+
+        Future.delayed(const Duration(seconds: 4), () async {
+          // If snackbar is still visible, close it.
+          messenger.hideCurrentSnackBar();
+        });
+      },
+
+      child: AnimatedPress(
         onTap: () {
           Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => BillDetailScreen(billId: bill.id),
-            ),
+            MaterialPageRoute(builder: (_) => BillDetailScreen(billId: bill.id)),
           );
         },
+        child: Card(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          elevation: 0.5,
+          shadowColor: Colors.black12,
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
+
+            // Leading status icon (CATEGORY ICON)
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isOverdue
+                    ? colorScheme.error.withOpacity(0.12)
+                    : colorScheme.primary.withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                iconForBillName(bill.name),
+                size: 22,
+                color: isOverdue ? colorScheme.error : colorScheme.primary,
+              ),
+            ),
+
+            // Main title row: name + amount
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    bill.name,
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isOverdue ? colorScheme.error : null,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  formatMoney(bill.amount),
+                  style: textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: isOverdue ? colorScheme.error : null,
+                  ),
+                ),
+              ],
+            ),
+
+            // Subtitle row: frequency and due date
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    size: 14,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      "$freqLabel • $dateText",
+                      style: textTheme.bodySmall?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Trailing chevron indicator
+            trailing: const Icon(Icons.chevron_right, size: 20),
+          ),
+        ),
       ),
     );
   }
 }
-
-
 
