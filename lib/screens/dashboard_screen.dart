@@ -3,10 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../providers/bill_provider.dart';
 import '../models/bill.dart';
+import '../utils/formatters.dart';
 import 'add_edit_bill_screen.dart';
 import 'bill_detail_screen.dart';
-import 'settings_screen.dart';
-
 
 /// Main dashboard screen.
 ///
@@ -29,18 +28,6 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const SettingsScreen(),
-                ),
-              );
-            },
-          ),
-        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -158,7 +145,7 @@ class _SummaryItem extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          '\$${value.toStringAsFixed(2)}',
+          formatMoney(value),
           style: textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -179,6 +166,8 @@ class _UpcomingBillsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final billProvider = context.read<BillProvider>();
 
     return Card(
       child: Padding(
@@ -210,6 +199,13 @@ class _UpcomingBillsSection extends StatelessWidget {
                     bill.nextDueDate.day.toString().padLeft(2, '0');
                     final month =
                     bill.nextDueDate.month.toString().padLeft(2, '0');
+                    final isOverdue = billProvider.isOverdue(bill);
+
+                    final amountStyle = textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color:
+                      isOverdue ? colorScheme.error : textTheme.bodyMedium?.color,
+                    );
 
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -217,7 +213,11 @@ class _UpcomingBillsSection extends StatelessWidget {
                         Expanded(
                           child: Text(
                             bill.name,
-                            style: textTheme.bodyMedium,
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: isOverdue
+                                  ? colorScheme.error
+                                  : textTheme.bodyMedium?.color,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -228,10 +228,8 @@ class _UpcomingBillsSection extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          '\$${bill.amount.toStringAsFixed(2)}',
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          formatMoney(bill.amount),
+                          style: amountStyle,
                         ),
                       ],
                     );
@@ -261,13 +259,31 @@ class _BillListTile extends StatelessWidget {
     final month = bill.nextDueDate.month.toString().padLeft(2, '0');
     final year = bill.nextDueDate.year.toString();
 
+    final billProvider = context.read<BillProvider>();
+    final isOverdue = billProvider.isOverdue(bill);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final titleStyle = isOverdue
+        ? TextStyle(color: colorScheme.error, fontWeight: FontWeight.w600)
+        : null;
+
+    final amountStyle = isOverdue
+        ? TextStyle(color: colorScheme.error, fontWeight: FontWeight.w600)
+        : null;
+
     return Card(
       child: ListTile(
-        title: Text(bill.name),
+        title: Text(
+          bill.name,
+          style: titleStyle,
+        ),
         subtitle: Text(
           '$freqLabel • Next due: $day/$month/$year',
         ),
-        trailing: Text('\$${bill.amount.toStringAsFixed(2)}'),
+        trailing: Text(
+          formatMoney(bill.amount),
+          style: amountStyle,
+        ),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(

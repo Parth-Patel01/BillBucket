@@ -5,6 +5,9 @@ import '../models/bill.dart';
 import '../providers/bill_provider.dart';
 import 'add_edit_bill_screen.dart';
 
+import '../utils/formatters.dart';
+
+
 /// Shows full information about a single bill and actions:
 /// - Mark as paid today (updates next due date)
 /// - Edit bill
@@ -54,7 +57,7 @@ class BillDetailScreen extends StatelessWidget {
               // Amount
               _DetailRow(
                 label: 'Amount',
-                value: '\$${bill.amount.toStringAsFixed(2)}',
+                value: formatMoney(bill.amount),
                 textTheme: textTheme,
               ),
               const SizedBox(height: 12),

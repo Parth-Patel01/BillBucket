@@ -286,4 +286,12 @@ class BillProvider extends ChangeNotifier {
     await updateBill(updated);
   }
 
+  /// Returns true if the bill is overdue (nextDueDate is before today).
+  bool isOverdue(Bill bill) {
+    final today = _stripTime(DateTime.now());
+    final dueDate = _stripTime(bill.nextDueDate);
+    return dueDate.isBefore(today);
+  }
+
+
 }
