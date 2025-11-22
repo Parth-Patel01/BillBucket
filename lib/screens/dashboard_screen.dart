@@ -75,6 +75,8 @@ class DashboardScreen extends StatelessWidget {
                 ),
               )
                   : ListView.builder(
+                padding:
+                const EdgeInsets.only(bottom: 80), // 👈 extra space for FAB
                 itemCount: sortedBills.length,
                 itemBuilder: (context, index) {
                   final bill = sortedBills[index];
@@ -162,6 +164,7 @@ class _SummaryItem extends StatelessWidget {
 }
 
 /// Card section for upcoming bills within the next 14 days.
+/// Grows naturally but stops at a maximum height.
 class _UpcomingBillsSection extends StatelessWidget {
   const _UpcomingBillsSection({
     required this.upcomingBills,
@@ -188,31 +191,31 @@ class _UpcomingBillsSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
+
             if (upcomingBills.isEmpty)
               Text(
                 'No bills due in the next 14 days.',
                 style: textTheme.bodyMedium,
               )
             else
-              SizedBox(
-                height: 160,
+              ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: 240, // 👈 natural until 240px then scroll
+                ),
                 child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: upcomingBills.length,
-                  separatorBuilder: (_, __) => const Divider(height: 8),
+                  separatorBuilder: (_, __) => const Divider(height: 12),
                   itemBuilder: (context, index) {
                     final bill = upcomingBills[index];
+                    final provider = context.read<BillProvider>();
+                    final isOverdue = provider.isOverdue(bill);
+
                     final day =
                     bill.nextDueDate.day.toString().padLeft(2, '0');
                     final month =
                     bill.nextDueDate.month.toString().padLeft(2, '0');
-                    final isOverdue = billProvider.isOverdue(bill);
-
-                    final amountStyle = textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: isOverdue
-                          ? colorScheme.error
-                          : textTheme.bodyMedium?.color,
-                    );
 
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -229,14 +232,16 @@ class _UpcomingBillsSection extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          '$day/$month',
-                          style: textTheme.bodySmall,
-                        ),
+                        Text('$day/$month', style: textTheme.bodySmall),
                         const SizedBox(width: 8),
                         Text(
                           formatMoney(bill.amount),
-                          style: amountStyle,
+                          style: textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: isOverdue
+                                ? colorScheme.error
+                                : textTheme.bodyMedium?.color,
+                          ),
                         ),
                       ],
                     );
@@ -249,6 +254,7 @@ class _UpcomingBillsSection extends StatelessWidget {
     );
   }
 }
+
 
 /// Basic list tile for a bill.
 /// Tapping navigates to the bill detail screen.
