@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/bill_provider.dart';
 import '../models/bill.dart';
 import 'add_edit_bill_screen.dart';
+import 'bill_detail_screen.dart';
 
 
 /// Initial dashboard screen.
@@ -167,7 +168,11 @@ class _BillListTile extends StatelessWidget {
         ),
         trailing: Text('\$${bill.amount.toStringAsFixed(2)}'),
         onTap: () {
-          // TODO: navigate to bill detail screen (we'll add this later).
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => BillDetailScreen(billId: bill.id),
+            ),
+          );
         },
       ),
     );

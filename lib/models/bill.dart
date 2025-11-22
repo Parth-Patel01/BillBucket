@@ -62,7 +62,8 @@ class Bill extends HiveObject {
 
   /// Creates a new updated copy of this Bill (immutable pattern).
   ///
-  /// This avoids mutating objects directly and gives better control.
+  /// Note: [clearLastPaidDate] allows explicitly setting lastPaidDate to null,
+  /// because nullable fields can't be cleared with simple `??` logic.
   Bill copyWith({
     String? id,
     String? name,
@@ -70,6 +71,7 @@ class Bill extends HiveObject {
     BillFrequency? frequency,
     DateTime? nextDueDate,
     DateTime? lastPaidDate,
+    bool clearLastPaidDate = false,
   }) {
     return Bill(
       id: id ?? this.id,
@@ -77,9 +79,12 @@ class Bill extends HiveObject {
       amount: amount ?? this.amount,
       frequency: frequency ?? this.frequency,
       nextDueDate: nextDueDate ?? this.nextDueDate,
-      lastPaidDate: lastPaidDate ?? this.lastPaidDate,
+      lastPaidDate: clearLastPaidDate
+          ? null
+          : (lastPaidDate ?? this.lastPaidDate),
     );
   }
+
 
   /// Converts a BillFrequency enum into a readable string for UI.
   static String frequencyLabel(BillFrequency freq) {
