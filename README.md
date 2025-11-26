@@ -54,26 +54,27 @@ With smart calculations for monthly costs and recommended weekly transfers, you'
 
 <div align="center">
 
-<div>
-  <div style="display: inline-block; margin: 10px;">
-    <img src="images/dashboard.png" width="200"/>
-  </div>
-  <div style="display: inline-block; margin: 10px;">
-    <img src="images/addbill.png" width="200"/>
-  </div>
-  <div style="display: inline-block; margin: 10px;">
-    <img src="images/editbill.png" width="200"/>
-  </div>
-</div>
-
-<div>
-  <div style="display: inline-block; margin: 10px;">
-    <img src="images/settings.png" width="200"/>
-  </div>
-  <div style="display: inline-block; margin: 10px;">
-    <img src="images/splashscreen.png" width="200"/>
-  </div>
-</div>
+<table>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="images/splashscreen.png" width="200"/>
+    </td>
+    <td align="center" colspan="2">
+      <img src="images/dashboard.png" width="200"/>
+    </td>
+    <td align="center" colspan="2">
+      <img src="images/addbill.png" width="200"/>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="3">
+      <img src="images/editbill.png" width="200"/>
+    </td>
+    <td align="center" colspan="3">
+      <img src="images/settings.png" width="200"/>
+    </td>
+  </tr>
+</table>
 
 </div>
 
