@@ -55,19 +55,19 @@ With smart calculations for monthly costs and recommended weekly transfers, you'
 <div align="center">
 
 ### Dashboard
-![Dashboard](images/screenshots/dashboard.png)
+![Dashboard](images/dashboard.png)
 
 ### Add Bill
-![Add Bill](images/screenshots/addbill.png)
+![Add Bill](images/addbill.png)
 
 ### Edit Bill
-![Edit Bill](images/screenshots/editbill.png)
+![Edit Bill](images/editbill.png)
 
 ### Settings
-![Settings](images/screenshots/settings.png)
+![Settings](images/settings.png)
 
 ### Splash Screen
-![Splash Screen](images/screenshots/splashscreen.png)
+![Splash Screen](images/splashscreen.png)
 
 </div>
 
