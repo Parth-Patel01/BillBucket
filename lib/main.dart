@@ -1,4 +1,3 @@
-import 'package:bill_bucket/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +8,7 @@ import 'providers/bill_provider.dart';
 import 'providers/settings_provider.dart';
 import 'screens/dashboard_screen.dart';
 import 'theme/app_theme.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,8 +24,6 @@ Future<void> main() async {
   // Open Hive boxes
   final billsBox = await Hive.openBox<Bill>('bills_box');
   final settingsBox = await Hive.openBox<AppSettings>('settings_box');
-
-  await NotificationService.instance.init();
 
   runApp(
     MultiProvider(

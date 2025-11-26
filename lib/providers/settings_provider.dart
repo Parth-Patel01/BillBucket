@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 import '../models/app_settings.dart';
@@ -31,7 +32,9 @@ class SettingsProvider extends ChangeNotifier {
     if (existing != null) {
       _settings = existing;
     } else {
-      _settings = AppSettings(themeMode: AppThemeMode.system);
+      _settings = AppSettings(
+        themeMode: AppThemeMode.system,
+      );
       _settingsBox.put(_settingsKey, _settings);
     }
     notifyListeners();

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/bill.dart';
 import '../providers/bill_provider.dart';
+import '../providers/settings_provider.dart';
 
 /// Screen used for both creating a new bill and editing an existing one.
 ///

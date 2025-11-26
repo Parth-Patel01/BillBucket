@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/app_settings.dart';
 import '../providers/settings_provider.dart';
 
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -19,7 +20,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   static const String _ownerName = 'Parth Patel';
   static const String _ownerEmail = 'patel.parth2201@gmail.com';
-  static const String _githubUrl = 'https://github.com/Parth-Patel01/BillBucket';
+  static const String _githubUrl =
+      'https://github.com/Parth-Patel01/BillBucket';
 
   @override
   void initState() {
@@ -36,13 +38,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _launchExternal(Uri uri) async {
-    final ok = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
-    if (!ok && mounted) {
+    try {
+      final ok = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open: $uri')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open link.')),
+        SnackBar(content: Text('Error opening link: $e')),
       );
     }
   }
@@ -71,8 +80,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _rateApp() async {
-    // Basic Play Store URL using package name.
-    // If you later publish to Play Store, this will work correctly.
     final packageName = _info?.packageName ?? 'dev.parth.billbucket';
     final uri = Uri.parse(
       'https://play.google.com/store/apps/details?id=$packageName',
@@ -211,7 +218,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   leading: const Icon(Icons.email_outlined),
                   title: const Text('Contact email'),
                   subtitle: Text(_ownerEmail),
-                  // tap = copy email, trailing icon = send email
                   onTap: _copyEmailToClipboard,
                   trailing: IconButton(
                     icon: const Icon(Icons.send_outlined),

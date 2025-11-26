@@ -5,7 +5,6 @@ import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/bill.dart';
-import '../services/notification_service.dart';
 import '../utils/formatters.dart';
 
 /// Central place for managing bills state and business logic.
@@ -71,7 +70,7 @@ class BillProvider extends ChangeNotifier {
   /// - A unique id is generated.
   /// - Data is saved to Hive.
   /// - Listeners are notified.
-  Future<void> addBill({
+  Future<Bill> addBill({
     required String name,
     required double amount,
     required BillFrequency frequency,
@@ -93,13 +92,7 @@ class BillProvider extends ChangeNotifier {
     _bills.add(newBill);
     notifyListeners();
 
-    // Schedule notification
-    await NotificationService.instance.scheduleBillReminder(
-      billId: newBill.id,
-      billName: newBill.name,
-      amount: newBill.amount,
-      dueDate: newBill.nextDueDate,
-    );
+    return newBill;
   }
 
   /// Updates an existing bill.
@@ -144,9 +137,6 @@ class BillProvider extends ChangeNotifier {
     await _billsBox.delete(id);
     _bills.removeWhere((bill) => bill.id == id);
     notifyListeners();
-
-    // Cancel any scheduled reminder
-    await NotificationService.instance.cancelBillReminder(id);
   }
 
   /// Marks a bill as paid on a given date (usually today).
@@ -173,15 +163,6 @@ class BillProvider extends ChangeNotifier {
     );
 
     await updateBill(updated);
-
-    await NotificationService.instance.cancelBillReminder(updated.id);
-    // Reschedule the notification for the new next due date.
-    await NotificationService.instance.scheduleBillReminder(
-      billId: updated.id,
-      billName: updated.name,
-      amount: updated.amount,
-      dueDate: updated.nextDueDate,
-    );
   }
 
   /// Calculates an approximate monthly equivalent cost for all bills.
@@ -318,5 +299,4 @@ class BillProvider extends ChangeNotifier {
     _bills.add(bill);
     notifyListeners();
   }
-
 }
