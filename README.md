@@ -273,6 +273,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ![GitHub issues](https://img.shields.io/github/issues/Parth-Patel01/BillBucket)
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/Parth-Patel01/BillBucket)
 
+### 📄 Privacy Policy
+
+https://parth-patel01.github.io/BillBucket/privacy-policy
+
 ---
 
 <div align="center">
